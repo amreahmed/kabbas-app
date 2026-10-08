@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    name: Flutter analysis and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Flutter 3.47.2
+        run: |
+          git clone --depth 1 --branch 3.47.2 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - name: Use non-production Firebase placeholders
+        run: cp lib/firebase_options.example.dart lib/firebase_options.dart
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - name: Check repository hygiene
+        run: python3 scripts/check-repository.py
+
+  firestore:
+    name: Firestore security rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tooling/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci --prefix tooling
+      - run: npx --yes firebase-tools@15.33.0 emulators:exec --only firestore --project demo-kabbas "node --test tooling/rules.test.cjs"

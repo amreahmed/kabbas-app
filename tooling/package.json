@@ -1,0 +1,11 @@
+{
+  "name": "kabbas-release-checks",
+  "private": true,
+  "scripts": {
+    "test": "cd .. && node --test tooling/rules.test.cjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0"
+  }
+}
